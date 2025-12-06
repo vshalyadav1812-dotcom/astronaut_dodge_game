@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astronaut Dodge</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="game-container">
+        <div id="gameArea">
+            <div id="planet"></div>
+            <div id="stars"></div>
+            <div id="player"></div>
+            <div class="hud">
+                <div id="score">Score: 0</div>
+                <div id="lives">Lives: 3</div>
+                <button id="exitBtn" onclick="exitGame()">EXIT</button>
+            </div>
+            <div id="gameOver" class="hidden">
+                <h1>MISSION FAILED</h1>
+                <p id="finalScore">Score: 0</p>
+                <button onclick="restartGame()">RETRY MISSION</button>
+                <button onclick="exitGame()">EXIT</button>
+            </div>
+            <div id="secretModal" class="hidden">
+                <h1>SECRET DISCOVERED!</h1>
+                <p id="secretText">...</p>
+                <button onclick="closeSecret()">CONTINUE MISSION</button>
+            </div>
+            <div id="startScreen">
+                <h1>ASTRONAUT DODGE</h1>
+                <p>Use Left/Right Arrows to Move</p>
+                <button onclick="startGame()">START MISSION</button>
+            </div>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+
+</html>
