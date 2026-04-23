@@ -1,7 +1,10 @@
 const player = document.getElementById("player");
 const gameArea = document.getElementById("gameArea");
 const scoreText = document.getElementById("score");
-const livesText = document.getElementById("lives");
+const livesText = document.getElementById("livesCount");
+const levelText = document.getElementById("level");
+const laserBar = document.getElementById("laserBar");
+const pauseScreen = document.getElementById("pauseScreen");
 const gameOverScreen = document.getElementById("gameOver");
 const startScreen = document.getElementById("startScreen");
 const secretModal = document.getElementById("secretModal");
@@ -10,7 +13,10 @@ const finalScoreText = document.getElementById("finalScore");
 const planetDiv = document.getElementById("planet");
 
 let score = 0;
+let currentLevel = 1;
 let lives = 3;
+let laserEnergy = 100;
+let laserRegenRate = 0.5;
 let isGameOver = false;
 let isPlaying = false;
 let isPaused = false;
@@ -175,11 +181,31 @@ function playSound(type) {
         gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
         osc.start(now);
         osc.stop(now + 0.6);
+    } else if (type === 'laser') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.start(now);
+        osc.stop(now + 0.1);
+    } else if (type === 'explosion') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(100, now);
+        osc.frequency.exponentialRampToValueAtTime(10, now + 0.3);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.start(now);
+        osc.stop(now + 0.3);
     }
 }
 
 let keys = {};
-document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keydown", e => {
+    keys[e.key] = true;
+    if (e.code === "Space") fireLaser();
+    if (e.key === "Escape" || e.key === "p" || e.key === "P") togglePause();
+});
 document.addEventListener("keyup", e => keys[e.key] = false);
 
 // Touch controls
@@ -263,13 +289,72 @@ function checkCollision(a, b) {
         ar.top > br.bottom - padding);
 }
 
+function fireLaser() {
+    if (!isPlaying || isPaused || isGameOver) return;
+    if (laserEnergy >= 20) {
+        laserEnergy -= 20;
+        updateLaserBar();
+        playSound('laser');
+        
+        let laser = document.createElement("div");
+        laser.classList.add("laser");
+        laser.dataset.type = "laser";
+        
+        let playerLeft = parseInt(window.getComputedStyle(player).left);
+        laser.style.left = (playerLeft + 23) + "px"; // center of player
+        laser.style.bottom = "70px"; // just above player
+        
+        gameArea.appendChild(laser);
+    }
+}
+
+function updateLaserBar() {
+    laserBar.style.width = laserEnergy + "%";
+}
+
+function createExplosion(left, top) {
+    let exp = document.createElement("div");
+    exp.classList.add("explosion");
+    exp.style.left = left;
+    exp.style.top = top;
+    gameArea.appendChild(exp);
+    setTimeout(() => exp.remove(), 300);
+}
+
+function togglePause() {
+    if (!isPlaying || isGameOver) return;
+    isPaused = !isPaused;
+    if (isPaused) {
+        pauseScreen.classList.remove("hidden");
+    } else {
+        pauseScreen.classList.add("hidden");
+        requestAnimationFrame(gameLoop);
+    }
+}
+
 function gameLoop() {
     if (isGameOver || !isPlaying || isPaused) return;
 
     movePlayer();
 
     score++;
-    scoreText.textContent = "Score: " + score;
+    scoreText.textContent = "SCORE: " + score;
+
+    let newLevel = Math.floor(score / 1000) + 1;
+    if (newLevel > currentLevel) {
+        currentLevel = newLevel;
+        levelText.textContent = "LEVEL: " + currentLevel;
+        speed += 0.5;
+        if (asteroidInterval) clearInterval(asteroidInterval);
+        let newInterval = Math.max(200, 800 - (currentLevel * 50));
+        asteroidInterval = setInterval(createEntity, newInterval);
+        showZoneNotification("LEVEL " + currentLevel);
+    }
+
+    if (laserEnergy < 100) {
+        laserEnergy = Math.min(100, laserEnergy + laserRegenRate);
+        updateLaserBar();
+    }
 
     // Solar System Tour Logic
     if (planetDiv) {
@@ -293,7 +378,6 @@ function gameLoop() {
             { score: 24000, class: "planet-nebula", name: "LEAVING SOLAR SYSTEM" }
         ];
 
-        // Find current stage
         let currentStage = stages[0];
         for (let i = stages.length - 1; i >= 0; i--) {
             if (score >= stages[i].score) {
@@ -302,21 +386,25 @@ function gameLoop() {
             }
         }
 
-        // Apply class if changed
         if (!planetDiv.classList.contains(currentStage.class)) {
             planetDiv.className = currentStage.class;
             showZoneNotification(currentStage.name);
-
-            // Animate planet rising
             planetDiv.style.bottom = "-300px";
             setTimeout(() => planetDiv.style.bottom = "-100px", 50);
         }
     }
 
-    if (score % 500 === 0) speed += 0.5;
+    let lasers = document.querySelectorAll(".laser");
+    lasers.forEach(l => {
+        let bottom = parseInt(l.style.bottom);
+        l.style.bottom = (bottom + 15) + "px";
+        if (bottom > gameArea.clientHeight) l.remove();
+    });
 
     let entities = document.querySelectorAll(".entity");
     entities.forEach(e => {
+        if (e.dataset.type === "laser") return; // skip processing laser in entity loop
+
         let top = parseInt(e.style.top);
         let moveSpeed = speed + Number(e.dataset.speedMod);
         e.style.top = (top + moveSpeed) + "px";
@@ -329,26 +417,37 @@ function gameLoop() {
             e.style.transform = `rotate(${currentRotation + Number(e.dataset.rotationSpeed)}deg)`;
         }
 
-        if (checkCollision(e, player)) {
-            const type = e.dataset.type;
+        // Check laser hits
+        lasers.forEach(l => {
+            if (checkCollision(l, e)) {
+                if (e.dataset.type === "asteroid" || e.dataset.type === "alien" || e.dataset.type === "ship") {
+                    createExplosion(e.style.left, e.style.top);
+                    playSound('explosion');
+                    score += 50; // Bonus points for destroying enemies
+                    e.remove();
+                    l.remove();
+                }
+            }
+        });
 
+        // Player collision
+        if (e.parentNode && checkCollision(e, player)) {
+            const type = e.dataset.type;
             if (type === "asteroid" || type === "alien" || type === "ship") {
                 playSound('hit');
                 lives--;
-                livesText.textContent = "Lives: " + lives;
+                livesText.textContent = lives;
                 player.style.opacity = "0.5";
                 setTimeout(() => player.style.opacity = "1", 200);
-
                 if (lives <= 0) endGame();
             } else if (type === "energy-drink") {
                 playSound('powerup');
                 lives++;
-                livesText.textContent = "Lives: " + lives;
+                livesText.textContent = lives;
             } else if (type === "scroll") {
                 playSound('secret');
                 showSecret();
             }
-
             e.remove();
         }
 
@@ -402,14 +501,19 @@ function startGame() {
     startScreen.classList.add("hidden");
     gameOverScreen.classList.add("hidden");
     secretModal.classList.add("hidden");
+    pauseScreen.classList.add("hidden");
     isPlaying = true;
     isGameOver = false;
     isPaused = false;
     score = 0;
+    currentLevel = 1;
     lives = 3;
     speed = 3;
-    scoreText.textContent = "Score: 0";
-    livesText.textContent = "Lives: 3";
+    laserEnergy = 100;
+    updateLaserBar();
+    scoreText.textContent = "SCORE: 0";
+    levelText.textContent = "LEVEL: 1";
+    livesText.textContent = "3";
 
     player.style.left = (gameArea.clientWidth / 2 - 25) + "px";
 

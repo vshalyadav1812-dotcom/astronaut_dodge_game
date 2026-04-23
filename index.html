@@ -19,26 +19,48 @@
             <div id="stars"></div>
             <div id="player"></div>
             <div class="hud">
-                <div id="score">Score: 0</div>
-                <div id="lives">Lives: 3</div>
-                <button id="exitBtn" onclick="exitGame()">EXIT</button>
+                <div class="hud-left">
+                    <div id="score">SCORE: 0</div>
+                    <div id="level">LEVEL: 1</div>
+                    <div id="lives">❤️ <span id="livesCount">3</span></div>
+                </div>
+                <div class="hud-center">
+                    <div class="laser-ui">
+                        <div class="laser-label">LASER</div>
+                        <div class="laser-track">
+                            <div id="laserBar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hud-right">
+                    <button class="icon-btn" id="pauseBtn" onclick="togglePause()">⏸️</button>
+                    <button class="icon-btn" id="exitBtn" onclick="exitGame()">❌</button>
+                </div>
             </div>
-            <div id="gameOver" class="hidden">
+            <div id="gameOver" class="hidden modal">
                 <h1>MISSION FAILED</h1>
                 <p id="finalScore">Score: 0</p>
                 <button onclick="restartGame()">RETRY MISSION</button>
-                <button onclick="exitGame()">EXIT</button>
+                <button onclick="exitGame()">MAIN MENU</button>
             </div>
-            <div id="secretModal" class="hidden">
+            <div id="pauseScreen" class="hidden modal">
+                <h1>MISSION PAUSED</h1>
+                <button onclick="togglePause()">RESUME</button>
+                <button onclick="restartGame()">RESTART MISSION</button>
+                <button onclick="exitGame()">ABORT MISSION</button>
+            </div>
+            <div id="secretModal" class="hidden modal">
                 <h1>SECRET DISCOVERED!</h1>
                 <p id="secretText">...</p>
                 <button onclick="closeSecret()">CONTINUE MISSION</button>
             </div>
-            <div id="startScreen">
+            <div id="startScreen" class="modal">
                 <h1>ASTRONAUT DODGE</h1>
                 <p>Use Left/Right Arrows or Touch to Move</p>
+                <p>Press SPACE or Tap 🔥 to Fire Laser</p>
                 <button onclick="startGame()">START MISSION</button>
             </div>
+            <div id="mobileFireBtn" onclick="fireLaser()">🔥</div>
         </div>
     </div>
     <script src="game.js"></script>
