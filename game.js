@@ -312,12 +312,19 @@ function updateLaserBar() {
     laserBar.style.width = laserEnergy + "%";
 }
 
+function shakeScreen() {
+    gameArea.parentElement.classList.remove("shake");
+    void gameArea.parentElement.offsetWidth; // trigger reflow
+    gameArea.parentElement.classList.add("shake");
+}
+
 function createExplosion(left, top) {
     let exp = document.createElement("div");
     exp.classList.add("explosion");
     exp.style.left = left;
     exp.style.top = top;
     gameArea.appendChild(exp);
+    shakeScreen();
     setTimeout(() => exp.remove(), 300);
 }
 
@@ -349,6 +356,12 @@ function gameLoop() {
         let newInterval = Math.max(200, 800 - (currentLevel * 50));
         asteroidInterval = setInterval(createEntity, newInterval);
         showZoneNotification("LEVEL " + currentLevel);
+
+        const stars = document.getElementById("stars");
+        if (stars) {
+            stars.classList.add("hyperdrive");
+            setTimeout(() => stars.classList.remove("hyperdrive"), 2000);
+        }
     }
 
     if (laserEnergy < 100) {
@@ -410,7 +423,14 @@ function gameLoop() {
         e.style.top = (top + moveSpeed) + "px";
 
         let left = parseInt(e.style.left);
-        e.style.left = (left + Number(e.dataset.drift)) + "px";
+        if (e.dataset.type === "alien") {
+            left += Math.sin(top / 30) * 5;
+        } else {
+            left += Number(e.dataset.drift);
+        }
+        
+        left = Math.max(0, Math.min(left, gameArea.clientWidth - 50));
+        e.style.left = left + "px";
 
         let currentRotation = parseFloat(e.style.transform.replace('rotate(', '').replace('deg)', '')) || 0;
         if (Number(e.dataset.rotationSpeed) !== 0) {
@@ -435,6 +455,7 @@ function gameLoop() {
             const type = e.dataset.type;
             if (type === "asteroid" || type === "alien" || type === "ship") {
                 playSound('hit');
+                shakeScreen();
                 lives--;
                 livesText.textContent = lives;
                 player.style.opacity = "0.5";
