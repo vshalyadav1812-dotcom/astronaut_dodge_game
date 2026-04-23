@@ -174,9 +174,9 @@ body {
 }
 
 .energy-drink {
-    /* Energy Drink SVG - Changed to Blue */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='%2300aaff' d='M20 10h24v44H20z'/%3E%3Cpath fill='%23fff' d='M28 20l8 10-8 4 8 10' stroke='%23fff' stroke-width='4' fill='none'/%3E%3C/svg%3E");
-    filter: drop-shadow(0 0 10px var(--powerup-color));
+    /* Energy Drink SVG - Changed to bright green to improve visibility */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='%2300ff88' d='M20 10h24v44H20z'/%3E%3Cpath fill='%23fff' d='M28 20l8 10-8 4 8 10' stroke='%23fff' stroke-width='4' fill='none'/%3E%3C/svg%3E");
+    filter: drop-shadow(0 0 10px #00ff88);
     width: 40px;
     height: 40px;
 }
